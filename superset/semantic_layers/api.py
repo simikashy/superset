@@ -56,6 +56,7 @@ from superset.commands.semantic_layer.update import (
     UpdateSemanticViewCommand,
 )
 from superset.constants import MODEL_API_RW_METHOD_PERMISSION_MAP
+from superset.daos.base import _escape_like
 from superset.daos.semantic_layer import SemanticLayerDAO
 from superset.datasets.schemas import get_delete_ids_schema
 from superset.exceptions import SupersetSecurityException
@@ -999,7 +1000,11 @@ class SemanticLayerRestApi(BaseSupersetApi):
                 )
             )
             if name_filter:
-                db_q = db_q.filter(Database.database_name.ilike(f"%{name_filter}%"))
+                db_q = db_q.filter(
+                    Database.database_name.ilike(
+                        f"%{_escape_like(str(name_filter))}%", escape="\\"
+                    )
+                )
             db_items = [("database", obj) for obj in db_q.all()]
 
         sl_items: list[tuple[str, SemanticLayer]] = []
@@ -1019,7 +1024,11 @@ class SemanticLayerRestApi(BaseSupersetApi):
                 perms = security_manager.user_view_menu_names("datasource_access")
                 sl_q = sl_q.filter(SemanticLayer.perm.in_(perms))
             if name_filter:
-                sl_q = sl_q.filter(SemanticLayer.name.ilike(f"%{name_filter}%"))
+                sl_q = sl_q.filter(
+                    SemanticLayer.name.ilike(
+                        f"%{_escape_like(str(name_filter))}%", escape="\\"
+                    )
+                )
             sl_items = [("semantic_layer", obj) for obj in sl_q.all()]
 
         # TODO: move sort + pagination to SQL before GA.

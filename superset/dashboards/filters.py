@@ -24,6 +24,7 @@ from sqlalchemy.orm.query import Query
 
 from superset import db, is_feature_enabled, security_manager
 from superset.connectors.sqla.models import SqlaTable
+from superset.daos.base import _escape_like
 from superset.models.core import Database
 from superset.models.dashboard import Dashboard, is_uuid
 from superset.models.embedded_dashboard import EmbeddedDashboard
@@ -43,11 +44,11 @@ class DashboardTitleOrSlugFilter(BaseFilter):  # pylint: disable=too-few-public-
     def apply(self, query: Query, value: Any) -> Query:
         if not value:
             return query
-        ilike_value = f"%{value}%"
+        ilike_value = f"%{_escape_like(str(value))}%"
         return query.filter(
             or_(
-                Dashboard.dashboard_title.ilike(ilike_value),
-                Dashboard.slug.ilike(ilike_value),
+                Dashboard.dashboard_title.ilike(ilike_value, escape="\\"),
+                Dashboard.slug.ilike(ilike_value, escape="\\"),
             )
         )
 
@@ -220,7 +221,7 @@ class FilterRelatedRoles(BaseFilter):  # pylint: disable=too-few-public-methods
         role_model = security_manager.role_model
         if value:
             return query.filter(
-                role_model.name.ilike(f"%{value}%"),
+                role_model.name.ilike(f"%{_escape_like(str(value))}%", escape="\\"),
             )
         return query
 

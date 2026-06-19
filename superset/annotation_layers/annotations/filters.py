@@ -20,6 +20,7 @@ from flask_babel import lazy_gettext as _
 from sqlalchemy import or_
 from sqlalchemy.orm.query import Query
 
+from superset.daos.base import _escape_like
 from superset.models.annotations import Annotation
 from superset.views.base import BaseFilter
 
@@ -31,10 +32,10 @@ class AnnotationAllTextFilter(BaseFilter):  # pylint: disable=too-few-public-met
     def apply(self, query: Query, value: Any) -> Query:
         if not value:
             return query
-        ilike_value = f"%{value}%"
+        ilike_value = f"%{_escape_like(str(value))}%"
         return query.filter(
             or_(
-                Annotation.short_descr.ilike(ilike_value),
-                Annotation.long_descr.ilike(ilike_value),
+                Annotation.short_descr.ilike(ilike_value, escape="\\"),
+                Annotation.long_descr.ilike(ilike_value, escape="\\"),
             )
         )

@@ -333,7 +333,13 @@ class RoleRestAPI(BaseSupersetApi):
                 query = query.filter(Role.groups.any(id=filter_dict["group_ids"]))
 
             if "name" in filter_dict:
-                query = query.filter(Role.name.ilike(f"%{filter_dict['name']}%"))
+                from superset.daos.base import _escape_like
+
+                query = query.filter(
+                    Role.name.ilike(
+                        f"%{_escape_like(str(filter_dict['name']))}%", escape="\\"
+                    )
+                )
 
             total_count = query.count()
 

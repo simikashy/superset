@@ -288,9 +288,11 @@ class _FilterPermissionNameContains(BaseFilter):
     column_name = "permission.name"
 
     def apply(self, query: SqlaQuery, value: Any) -> SqlaQuery:
+        from superset.daos.base import _escape_like
+
         return (
             query.join(Permission, PermissionView.permission_id == Permission.id)
-            .filter(Permission.name.ilike(f"%{value}%"))
+            .filter(Permission.name.ilike(f"%{_escape_like(str(value))}%", escape="\\"))
         )  # fmt: skip
 
 
@@ -302,9 +304,11 @@ class _FilterViewMenuNameContains(BaseFilter):
     column_name = "view_menu.name"
 
     def apply(self, query: SqlaQuery, value: Any) -> SqlaQuery:
+        from superset.daos.base import _escape_like
+
         return (
             query.join(ViewMenu, PermissionView.view_menu_id == ViewMenu.id)
-            .filter(ViewMenu.name.ilike(f"%{value}%"))
+            .filter(ViewMenu.name.ilike(f"%{_escape_like(str(value))}%", escape="\\"))
         )  # fmt: skip
 
 

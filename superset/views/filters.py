@@ -25,6 +25,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Query
 
 from superset import security_manager
+from superset.daos.base import _escape_like
 from superset.extensions import db
 from superset.models.helpers import SKIP_VISIBILITY_FILTER_CLASSES, SoftDeleteMixin
 
@@ -46,12 +47,13 @@ class FilterRelatedOwners(BaseFilter):  # pylint: disable=too-few-public-methods
 
     def apply(self, query: Query, value: Optional[Any]) -> Query:
         user_model = security_manager.user_model
-        like_value = "%" + cast(str, value) + "%"
+        like_value = f"%{_escape_like(str(value))}%"
         return query.filter(
             or_(
-                # could be made to handle spaces between names more gracefully
-                (user_model.first_name + " " + user_model.last_name).ilike(like_value),
-                user_model.username.ilike(like_value),
+                (user_model.first_name + " " + user_model.last_name).ilike(
+                    like_value, escape="\\"
+                ),
+                user_model.username.ilike(like_value, escape="\\"),
             )
         )
 
@@ -122,8 +124,8 @@ class FilterRelatedTables(BaseFilter):  # pylint: disable=too-few-public-methods
     def apply(self, query: Query, value: Optional[Any]) -> Query:
         from superset.connectors.sqla.models import SqlaTable
 
-        like_value = "%" + cast(str, value) + "%"
-        return query.filter(SqlaTable.table_name.ilike(like_value))
+        like_value = f"%{_escape_like(str(value))}%"
+        return query.filter(SqlaTable.table_name.ilike(like_value, escape="\\"))
 
 
 AUGMENT_RESPONSE_WITH_DELETED_AT = "_augment_response_with_deleted_at"

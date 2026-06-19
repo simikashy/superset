@@ -25,6 +25,7 @@ from sqlalchemy.orm.query import Query
 from superset import db, security_manager
 from superset.connectors.sqla import models
 from superset.connectors.sqla.models import SqlaTable
+from superset.daos.base import _escape_like
 from superset.models.core import FavStar
 from superset.models.slice import Slice
 from superset.tags.filters import BaseTagIdFilter, BaseTagNameFilter
@@ -41,13 +42,13 @@ class ChartAllTextFilter(BaseFilter):  # pylint: disable=too-few-public-methods
     def apply(self, query: Query, value: Any) -> Query:
         if not value:
             return query
-        ilike_value = f"%{value}%"
+        ilike_value = f"%{_escape_like(str(value))}%"
         return query.filter(
             or_(
-                Slice.slice_name.ilike(ilike_value),
-                Slice.description.ilike(ilike_value),
-                Slice.viz_type.ilike(ilike_value),
-                SqlaTable.table_name.ilike(ilike_value),
+                Slice.slice_name.ilike(ilike_value, escape="\\"),
+                Slice.description.ilike(ilike_value, escape="\\"),
+                Slice.viz_type.ilike(ilike_value, escape="\\"),
+                SqlaTable.table_name.ilike(ilike_value, escape="\\"),
             )
         )
 

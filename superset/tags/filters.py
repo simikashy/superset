@@ -22,6 +22,7 @@ from flask_babel import lazy_gettext as _
 from sqlalchemy.orm import Query
 
 from superset.connectors.sqla.models import SqlaTable
+from superset.daos.base import _escape_like
 from superset.extensions import db
 from superset.models.dashboard import Dashboard
 from superset.models.slice import Slice
@@ -62,11 +63,11 @@ class BaseTagNameFilter(BaseFilter):  # pylint: disable=too-few-public-methods
     """ The SQLAlchemy model """
 
     def apply(self, query: Query, value: Any) -> Query:
-        ilike_value = f"%{value}%"
+        ilike_value = f"%{_escape_like(str(value))}%"
         tags_query = (
             db.session.query(self.model.id)
             .join(self.model.tags)
-            .filter(Tag.name.ilike(ilike_value))
+            .filter(Tag.name.ilike(ilike_value, escape="\\"))
         )
         return query.filter(self.model.id.in_(tags_query))  # type: ignore[union-attr]
 

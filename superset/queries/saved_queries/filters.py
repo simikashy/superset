@@ -22,6 +22,7 @@ from flask_sqlalchemy import BaseQuery
 from sqlalchemy import or_
 from sqlalchemy.orm.query import Query
 
+from superset.daos.base import _escape_like
 from superset.models.sql_lab import SavedQuery
 from superset.tags.filters import BaseTagIdFilter, BaseTagNameFilter
 from superset.views.base import BaseFilter
@@ -35,13 +36,13 @@ class SavedQueryAllTextFilter(BaseFilter):  # pylint: disable=too-few-public-met
     def apply(self, query: Query, value: Any) -> Query:
         if not value:
             return query
-        ilike_value = f"%{value}%"
+        ilike_value = f"%{_escape_like(str(value))}%"
         return query.filter(
             or_(
-                SavedQuery.schema.ilike(ilike_value),
-                SavedQuery.label.ilike(ilike_value),
-                SavedQuery.description.ilike(ilike_value),
-                SavedQuery.sql.ilike(ilike_value),
+                SavedQuery.schema.ilike(ilike_value, escape="\\"),
+                SavedQuery.label.ilike(ilike_value, escape="\\"),
+                SavedQuery.description.ilike(ilike_value, escape="\\"),
+                SavedQuery.sql.ilike(ilike_value, escape="\\"),
             )
         )
 
