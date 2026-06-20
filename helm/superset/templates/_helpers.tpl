@@ -62,7 +62,18 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 
+{{- define "superset.validateRedisSSL" -}}
+{{- if .Values.supersetNode.connections.redis_ssl.enabled -}}
+  {{- $certReqs := .Values.supersetNode.connections.redis_ssl.ssl_cert_reqs | default "CERT_REQUIRED" -}}
+  {{- $allowInsecure := .Values.supersetNode.connections.redis_ssl.allow_insecure | default false -}}
+  {{- if and (eq $certReqs "CERT_NONE") (not $allowInsecure) -}}
+    {{ fail "Redis TLS is enabled with ssl_cert_reqs=CERT_NONE but allow_insecure is not set to true. Either set ssl_cert_reqs to CERT_REQUIRED (recommended) or explicitly set redis_ssl.allow_insecure=true to acknowledge the risk of disabling certificate validation." }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "superset-config" }}
+{{ include "superset.validateRedisSSL" . }}
 import os
 from flask_caching.backends.rediscache import RedisCache
 
@@ -78,7 +89,11 @@ REDIS_BASE_URL=f"{env('REDIS_PROTO')}://{env('REDIS_HOST')}:{env('REDIS_PORT')}"
 
 # Redis URL Params
 {{- if .Values.supersetNode.connections.redis_ssl.enabled }}
+{{- if .Values.supersetNode.connections.redis_ssl.ssl_ca_certs }}
+REDIS_URL_PARAMS = f"?ssl_cert_reqs={env('REDIS_SSL_CERT_REQS')}&ssl_ca_certs={env('REDIS_SSL_CA_CERTS')}"
+{{- else }}
 REDIS_URL_PARAMS = f"?ssl_cert_reqs={env('REDIS_SSL_CERT_REQS')}"
+{{- end }}
 {{- else }}
 REDIS_URL_PARAMS = ""
 {{- end}}
@@ -126,6 +141,9 @@ RESULTS_BACKEND = RedisCache(
       {{- if .Values.supersetNode.connections.redis_ssl.enabled }}
       ssl=True,
       ssl_cert_reqs=env('REDIS_SSL_CERT_REQS'),
+      {{- if .Values.supersetNode.connections.redis_ssl.ssl_ca_certs }}
+      ssl_ca_certs=env('REDIS_SSL_CA_CERTS'),
+      {{- end }}
       {{- end }}
 )
 
