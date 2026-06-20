@@ -26,6 +26,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from superset import db
 from superset.key_value.exceptions import KeyValueCreateFailedError
 from superset.key_value.types import (
+    JsonKeyValueCodec,
     KeyValueCodec,
     KeyValueResource,
     PickleKeyValueCodec,
@@ -55,16 +56,13 @@ class SupersetMetastoreCache(BaseCache):
     ) -> BaseCache:
         seed = config.get("CACHE_KEY_PREFIX", "")
         kwargs["namespace"] = get_uuid_namespace(seed, app)
-        codec = config.get("CODEC") or PickleKeyValueCodec()
-        if (
-            has_app_context()
-            and not current_app.debug
-            and isinstance(codec, PickleKeyValueCodec)
-        ):
-            logger.warning(
-                "Using PickleKeyValueCodec with SupersetMetastoreCache may be unsafe, "
-                "use at your own risk."
-            )
+        codec = config.get("CODEC") or JsonKeyValueCodec()
+        if isinstance(codec, PickleKeyValueCodec):
+            if has_app_context() and not current_app.debug:
+                logger.warning(
+                    "Using PickleKeyValueCodec with SupersetMetastoreCache is unsafe. "
+                    "Set CODEC to JsonKeyValueCodec or another safe codec."
+                )
         kwargs["codec"] = codec
         return cls(*args, **kwargs)
 
