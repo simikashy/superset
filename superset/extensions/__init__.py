@@ -37,13 +37,13 @@ except ImportError:
 from flask_caching.backends.base import BaseCache
 from flask_migrate import Migrate
 from flask_talisman import Talisman
-from flask_wtf.csrf import CSRFProtect
 from werkzeug.local import LocalProxy
 
 from superset.async_events.async_query_manager import AsyncQueryManager
 from superset.async_events.async_query_manager_factory import AsyncQueryManagerFactory
 from superset.extensions.ssh import SSHManagerFactory
 from superset.extensions.stats_logger import BaseStatsLoggerManager
+from superset.security.csrf import SupersetCSRFProtect
 from superset.security.manager import SupersetSecurityManager
 from superset.utils.cache_manager import CacheManager
 from superset.utils.database import apply_mariadb_ddl_fix
@@ -144,7 +144,7 @@ async_query_manager: AsyncQueryManager = LocalProxy(
 )
 cache_manager = CacheManager()
 celery_app = celery.Celery()
-csrf = CSRFProtect()
+csrf = SupersetCSRFProtect()
 db = get_sqla_class()()
 _event_logger: dict[str, Any] = {}
 encrypted_field_factory = EncryptedFieldFactory()
