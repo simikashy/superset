@@ -183,6 +183,32 @@ def test_load_examples_from_configs_wires_command_correctly(
 
 
 @patch("superset.examples.utils.ImportExamplesCommand")
+def test_load_configs_from_directory_uses_safe_yaml_loading(mock_command_cls):
+    """load_configs_from_directory() must use yaml.safe_load, not yaml.Loader.
+
+    Using yaml.Loader allows arbitrary Python object construction from
+    untrusted YAML, which is a remote code execution vector.
+    """
+    from superset.examples.utils import load_configs_from_directory
+
+    with TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        (root / "metadata.yaml").write_text("version: '1.0.0'\ntype: dashboard\n")
+
+        mock_command = MagicMock()
+        mock_command_cls.return_value = mock_command
+
+        with patch(
+            "superset.examples.utils.yaml.safe_load", wraps=yaml.safe_load
+        ) as mock_safe_load:
+            load_configs_from_directory(root=root, overwrite=True, force_data=False)
+
+            mock_safe_load.assert_called_once()
+            args = mock_safe_load.call_args[0]
+            assert "version" in args[0]
+
+
+@patch("superset.examples.utils.ImportExamplesCommand")
 @patch("superset.examples.utils.load_contents")
 def test_load_examples_from_configs_defaults(
     mock_load_contents,
