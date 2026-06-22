@@ -36,6 +36,9 @@
     "@superset-ui/switchboard": "^0.20.3",
     "jwt-decode": "^4.0.0"
   },
+  "overrides": {
+    "ajv": ">=8.18.0"
+  },
   "devDependencies": {
     "@babel/cli": "^7.26.10",
     "@babel/core": "^7.26.10",
