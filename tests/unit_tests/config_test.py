@@ -24,6 +24,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm.session import Session
 
 from superset import db
+from superset.config import CORS_OPTIONS, ENABLE_CORS
 from tests.conftest import with_config
 
 if TYPE_CHECKING:
@@ -312,3 +313,12 @@ def test_full_setting(
     assert dttm_col.is_dttm
     assert dttm_col.python_date_format == "epoch_s"
     assert dttm_col.expression == "CAST(dttm as INTEGER)"
+
+
+def test_cors_disabled_by_default() -> None:
+    assert ENABLE_CORS is False
+
+
+def test_cors_options_empty_by_default() -> None:
+    assert CORS_OPTIONS == {}
+    assert "origins" not in CORS_OPTIONS
