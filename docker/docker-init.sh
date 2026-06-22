@@ -35,13 +35,14 @@ Init Step ${1}/${STEP_CNT} [${2}] -- ${3}
 ######################################################################
 EOF
 }
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-admin}"
-# If Cypress run – overwrite the password for admin and export env variables
 if [ "$CYPRESS_CONFIG" == "true" ]; then
     ADMIN_PASSWORD="general"
     export SUPERSET_TESTENV=true
     export POSTGRES_DB=superset_cypress
     export SUPERSET__SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@db:5432/superset_cypress
+elif [ -z "${ADMIN_PASSWORD:-}" ]; then
+    ADMIN_PASSWORD="$(openssl rand -base64 42)"
+    GENERATED_ADMIN_PASSWORD=true
 fi
 # Initialize the database
 echo_step "1" "Starting" "Applying DB migrations"
@@ -49,7 +50,7 @@ superset db upgrade
 echo_step "1" "Complete" "Applying DB migrations"
 
 # Create an admin user
-echo_step "2" "Starting" "Setting up admin user ( admin / $ADMIN_PASSWORD )"
+echo_step "2" "Starting" "Setting up admin user"
 if [ "$CYPRESS_CONFIG" == "true" ]; then
     superset load_test_users
 else
@@ -61,6 +62,16 @@ else
         --lastname Admin
 fi
 echo_step "2" "Complete" "Setting up admin user"
+if [ "${GENERATED_ADMIN_PASSWORD:-}" = "true" ]; then
+    cat <<EOF
+######################################################################
+WARNING: No ADMIN_PASSWORD was provided. A random password has been
+generated. Set the ADMIN_PASSWORD environment variable to use a known
+password, or reset the admin password via:
+    superset fab reset-password --username admin --password <new-password>
+######################################################################
+EOF
+fi
 # Create default roles and permissions
 echo_step "3" "Starting" "Setting up roles and perms"
 superset init
