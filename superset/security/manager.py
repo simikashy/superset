@@ -3895,6 +3895,7 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
             "iat": now,  # issued at
             "exp": exp,  # expiration time
             "aud": audience,
+            "sub": user.get("username", "guest_user"),
             "type": "guest",
         }
         if datasets is not None:
@@ -4061,7 +4062,11 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         algo = get_conf()["GUEST_TOKEN_JWT_ALGO"]
         audience = self._get_guest_token_jwt_audience()
         return self.pyjwt_for_guest_token.decode(
-            raw_token, secret, algorithms=[algo], audience=audience
+            raw_token,
+            secret,
+            algorithms=[algo],
+            audience=audience,
+            options={"verify_sub": get_conf()["JWT_VERIFY_SUB"]},
         )
 
     @staticmethod
