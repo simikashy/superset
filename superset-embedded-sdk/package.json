@@ -60,5 +60,8 @@
     "url": "https://github.com/apache/superset/issues"
   },
   "license": "Apache-2.0",
-  "author": "Superset"
+  "author": "Superset",
+  "overrides": {
+    "js-yaml": "^4.2.0"
+  }
 }
