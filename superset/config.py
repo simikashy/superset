@@ -2509,7 +2509,7 @@ GUEST_TOKEN_VALIDATOR_HOOK = None
 # This is opt-in and backward compatible: the default expected version is 0 and
 # tokens minted before this feature (which carry no version claim) are treated as
 # version 0, so nothing is revoked until an admin explicitly bumps the version.
-GUEST_TOKEN_REVOCATION_ENABLED = False
+GUEST_TOKEN_REVOCATION_ENABLED = True
 
 # A SQL dataset health check. Note if enabled it is strongly advised that the callable
 # be memoized to aid with performance, i.e.,

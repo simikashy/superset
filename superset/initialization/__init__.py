@@ -695,6 +695,29 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         )
         sys.exit(1)
 
+    def check_guest_token_audience(self) -> None:
+        """Refuse to start without an explicit JWT audience
+        when embedding is enabled."""
+        if not feature_flag_manager.is_feature_enabled("EMBEDDED_SUPERSET"):
+            return
+        if self.config.get("GUEST_TOKEN_JWT_AUDIENCE") is not None:
+            return
+        self._log_config_warning(
+            "EMBEDDED_SUPERSET is enabled but GUEST_TOKEN_JWT_AUDIENCE is not "
+            "set.\n"
+            "Without an explicit audience, leaked guest tokens cannot be "
+            "constrained to the intended Superset origin.\n"
+            "Set it in superset_config.py:\n"
+            "  GUEST_TOKEN_JWT_AUDIENCE = 'https://superset.example.com'"
+        )
+        if self.superset_app.debug or self.superset_app.config["TESTING"] or is_test():
+            return
+        logger.error(
+            "Refusing to start: GUEST_TOKEN_JWT_AUDIENCE must be set "
+            "when EMBEDDED_SUPERSET is enabled"
+        )
+        sys.exit(1)
+
     def check_async_query_secret(self) -> None:
         """Refuse to start with the default async JWT secret when GAQ is enabled."""
         if not feature_flag_manager.is_feature_enabled("GLOBAL_ASYNC_QUERIES"):
@@ -831,6 +854,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         # conditionally
         self.configure_feature_flags()
         self.check_guest_token_secret()
+        self.check_guest_token_audience()
         self.check_async_query_secret()
         self.configure_db_encrypt()
         self.setup_db()
