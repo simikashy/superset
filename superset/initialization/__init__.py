@@ -744,6 +744,38 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         )
         sys.exit(1)
 
+    def check_cookie_security(self) -> None:
+        """Warn or refuse to start when cookie security settings are insecure."""
+        insecure_settings: list[str] = []
+        if not self.config.get("SESSION_COOKIE_SECURE"):
+            insecure_settings.append("SESSION_COOKIE_SECURE")
+        if not self.config.get("GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SECURE"):
+            insecure_settings.append("GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SECURE")
+        if self.config.get("GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SAMESITE") is None:
+            insecure_settings.append(
+                "GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SAMESITE (set to None)"
+            )
+
+        if not insecure_settings:
+            return
+
+        settings_list = ", ".join(insecure_settings)
+        self._log_config_warning(
+            f"Insecure cookie configuration detected: {settings_list}.\n"
+            "These settings allow cookies to be transmitted over non-TLS "
+            "channels.\n"
+            "For local development, override these in superset_config.py:\n"
+            "  SESSION_COOKIE_SECURE = False\n"
+            "  GLOBAL_ASYNC_QUERIES_JWT_COOKIE_SECURE = False"
+        )
+        if self.superset_app.debug or self.superset_app.config["TESTING"] or is_test():
+            return
+        logger.error(
+            "Refusing to start due to insecure cookie configuration: %s",
+            settings_list,
+        )
+        sys.exit(1)
+
     def configure_session(self) -> None:
         if self.config["SESSION_SERVER_SIDE"]:
             Session(self.superset_app)
@@ -847,6 +879,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         """
         self.pre_init()
         self.check_secret_key()
+        self.check_cookie_security()
         self.configure_session()
         # Configuration of logging must be done first to apply the formatter properly
         self.configure_logging()
